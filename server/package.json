@@ -1,0 +1,16 @@
+{
+  "name": "board-game-companion-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional cross-device sync layer for the Shelf client. Not required to run the app.",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "lowdb": "^7.0.1"
+  }
+}
