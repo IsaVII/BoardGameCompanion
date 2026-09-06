@@ -68,6 +68,20 @@ same from any device since the database is hosted.
 
 Full walkthrough in [supabase/README.md](supabase/README.md).
 
+## Deploy (GitHub Pages)
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) builds `client/`
+and publishes it on every push to `main`. To enable it:
+
+1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. (Optional) add repo secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+   to deploy in Supabase mode. Without them the site ships in local mode. The
+   anon key is public by design — data is protected by Row-Level Security.
+
+The app is served from `/BoardGameCompanion/` (set as Vite's `base` for
+production builds), and `client/public/404.html` + a snippet in `index.html`
+handle SPA deep links / refreshes, which GitHub Pages otherwise 404s.
+
 ## Layout
 
 ```
