@@ -10,8 +10,8 @@ To enable accounts and shared groups across devices, point it at a Supabase proj
 
 ## 2. Apply the schema
 
-Either paste [`migrations/0001_init.sql`](migrations/0001_init.sql) into the SQL
-editor and run it, or with the CLI:
+Run every file in [`migrations/`](migrations/) in order (`0001_init.sql`, then
+`0002_username_login.sql`, …) — paste each into the SQL editor, or use the CLI:
 
 ```bash
 supabase link --project-ref <ref>

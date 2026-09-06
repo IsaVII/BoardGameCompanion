@@ -4,10 +4,12 @@ import { provider, isCloud } from '../../lib/db';
 function userFromSession(session) {
   if (!session?.user) return null;
   const u = session.user;
+  const username = u.user_metadata?.username;
   return {
     id: u.id,
     email: u.email,
-    displayName: u.user_metadata?.display_name || u.email?.split('@')[0] || 'You',
+    username,
+    displayName: u.user_metadata?.display_name || username || u.email?.split('@')[0] || 'You',
   };
 }
 
@@ -16,12 +18,12 @@ export const bootstrapAuth = createAsyncThunk('auth/bootstrap', async () => {
   return userFromSession(session);
 });
 
-export const signIn = createAsyncThunk('auth/signIn', ({ email, password }) =>
-  provider.signIn(email, password),
+export const signIn = createAsyncThunk('auth/signIn', ({ identifier, password }) =>
+  provider.signIn(identifier, password),
 );
 
-export const signUp = createAsyncThunk('auth/signUp', ({ email, password, displayName }) =>
-  provider.signUp(email, password, displayName),
+export const signUp = createAsyncThunk('auth/signUp', ({ email, password, username }) =>
+  provider.signUp(email, password, username),
 );
 
 export const signOut = createAsyncThunk('auth/signOut', () => provider.signOut());

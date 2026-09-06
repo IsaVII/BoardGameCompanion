@@ -6,7 +6,7 @@ export default function LoginPage() {
   const dispatch = useAppDispatch();
   const error = useAppSelector(selectAuthError);
   const [mode, setMode] = useState('signin');
-  const [form, setForm] = useState({ email: '', password: '', displayName: '' });
+  const [form, setForm] = useState({ identifier: '', email: '', username: '', password: '' });
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -16,11 +16,18 @@ export default function LoginPage() {
     setBusy(true);
     setNotice('');
     if (mode === 'signin') {
-      await dispatch(signIn(form));
+      await dispatch(signIn({ identifier: form.identifier, password: form.password }));
     } else {
-      const res = await dispatch(signUp(form));
-      if (!res.error) setNotice('Account created. If email confirmation is on, check your inbox, then sign in.');
-      else setMode('signin');
+      const res = await dispatch(signUp({
+        email: form.email,
+        username: form.username,
+        password: form.password,
+      }));
+      if (!res.error) {
+        setNotice('Account created. If email confirmation is on, check your inbox, then sign in.');
+        setForm((f) => ({ ...f, identifier: f.username }));
+        setMode('signin');
+      }
     }
     setBusy(false);
   };
@@ -50,21 +57,32 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={submit} className="space-y-3">
-            {mode === 'signup' && (
+            {mode === 'signin' ? (
               <div>
-                <label className="label">Display name</label>
-                <input className="field" value={form.displayName} required
-                  onChange={(e) => set('displayName', e.target.value)} />
+                <label className="label">Email or username</label>
+                <input className="field" value={form.identifier} required autoComplete="username"
+                  onChange={(e) => set('identifier', e.target.value)} />
               </div>
+            ) : (
+              <>
+                <div>
+                  <label className="label">Username</label>
+                  <input className="field" value={form.username} required
+                    pattern="[A-Za-z0-9_]{3,}" title="At least 3 letters, digits or underscores"
+                    autoComplete="username"
+                    onChange={(e) => set('username', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Email</label>
+                  <input type="email" className="field" value={form.email} required autoComplete="email"
+                    onChange={(e) => set('email', e.target.value)} />
+                </div>
+              </>
             )}
-            <div>
-              <label className="label">Email</label>
-              <input type="email" className="field" value={form.email} required
-                onChange={(e) => set('email', e.target.value)} />
-            </div>
             <div>
               <label className="label">Password</label>
               <input type="password" className="field" value={form.password} required minLength={6}
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                 onChange={(e) => set('password', e.target.value)} />
             </div>
 

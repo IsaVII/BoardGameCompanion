@@ -25,15 +25,24 @@ export const supabaseProvider = {
     const { data } = supabase.auth.onAuthStateChange((_e, session) => cb(session));
     return () => data.subscription.unsubscribe();
   },
-  async signIn(email, password) {
+  // `identifier` is an email or a username.
+  async signIn(identifier, password) {
+    let email = identifier.trim();
+    if (!email.includes('@')) {
+      const { data, error } = await supabase.rpc('email_for_username', { uname: email });
+      if (error) throw error;
+      if (!data) throw new Error('No account found with that username');
+      email = data;
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   },
-  async signUp(email, password, displayName) {
+  async signUp(email, password, username) {
+    const uname = username.trim().toLowerCase();
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName } },
+      options: { data: { username: uname, display_name: username.trim() } },
     });
     if (error) throw error;
   },
