@@ -72,6 +72,9 @@ export const localProvider = {
     throw new Error('Local mode has no accounts. Configure Supabase to sign up.');
   },
   async signOut() {},
+  async deleteAccount() {
+    localStorage.removeItem(KEY);
+  },
 
   async listGroups() {
     return db.groups.map((g) => ({

@@ -28,6 +28,8 @@ export const signUp = createAsyncThunk('auth/signUp', ({ email, password, userna
 
 export const signOut = createAsyncThunk('auth/signOut', () => provider.signOut());
 
+export const deleteAccount = createAsyncThunk('auth/deleteAccount', () => provider.deleteAccount());
+
 const slice = createSlice({
   name: 'auth',
   initialState: {
@@ -48,7 +50,7 @@ const slice = createSlice({
       s.status = 'ready';
     });
     b.addCase(bootstrapAuth.rejected, (s) => { s.status = 'ready'; });
-    [signIn, signUp, signOut].forEach((thunk) => {
+    [signIn, signUp, signOut, deleteAccount].forEach((thunk) => {
       b.addCase(thunk.pending, (s) => { s.error = null; });
       b.addCase(thunk.rejected, (s, a) => { s.error = a.error.message; });
     });

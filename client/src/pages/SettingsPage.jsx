@@ -6,7 +6,7 @@ import {
   selectGroups, selectActiveGroup, selectActiveGroupId,
   activeGroupSet, createGroup, joinGroup, renameGroup, leaveGroup, createInvite, fetchGroups,
 } from '../features/groups/groupsSlice';
-import { selectUser, signOut } from '../features/auth/authSlice';
+import { selectUser, signOut, deleteAccount } from '../features/auth/authSlice';
 import { provider, isCloud } from '../lib/db';
 import { localProvider } from '../lib/db/localProvider';
 
@@ -51,10 +51,33 @@ export default function SettingsPage() {
 
       {/* ---- Account (or local data) ---- */}
       {isCloud && user && (
-        <section className="card space-y-2">
+        <section className="card space-y-3">
           <h2 className="font-semibold">Account</h2>
-          <p className="text-sm text-slate-400">{user.displayName} · {user.email}</p>
-          <button className="btn-ghost" onClick={() => dispatch(signOut())}>Sign out</button>
+          <p className="text-sm text-slate-400">
+            {user.username ? `@${user.username} · ` : ''}{user.email}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-ghost" onClick={() => dispatch(signOut())}>Sign out</button>
+            <button
+              className="btn-ghost text-rose-300"
+              onClick={async () => {
+                const owned = groups.filter((g) => g.role === 'owner');
+                const shared = owned.filter((g) => g.memberCount > 1).map((g) => g.name);
+                const warning = shared.length
+                  ? `\n\nOwnership of ${shared.join(', ')} will pass to the longest-standing member. Groups where you're the only member will be deleted with all their data.`
+                  : '\n\nYour groups and all their data will be deleted.';
+                if (!confirm(`Permanently delete your account?${warning}\n\nThis cannot be undone.`)) return;
+                try {
+                  await dispatch(deleteAccount()).unwrap();
+                  window.location.reload();
+                } catch (err) {
+                  flash(err.message || 'Could not delete account');
+                }
+              }}
+            >
+              Delete account
+            </button>
+          </div>
         </section>
       )}
       {!isCloud && (

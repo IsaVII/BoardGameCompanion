@@ -49,6 +49,11 @@ export const supabaseProvider = {
   async signOut() {
     await supabase.auth.signOut();
   },
+  async deleteAccount() {
+    const { error } = await supabase.rpc('delete_my_account');
+    if (error) throw error;
+    await supabase.auth.signOut();
+  },
 
   // ---- groups ---------------------------------------------------------
   async listGroups() {
