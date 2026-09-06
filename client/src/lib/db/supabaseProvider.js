@@ -113,12 +113,29 @@ export const supabaseProvider = {
     if (error) throw error;
   },
   async listMembers(groupId) {
-    const { data, error } = await supabase
+    // Two queries rather than a PostgREST embed: group_members has no direct FK
+    // to profiles (both only reference auth.users), so `profiles(...)` embedding
+    // fails and would blank the whole list.
+    const { data: rows, error } = await supabase
       .from('group_members')
-      .select('user_id, role, profiles(display_name)')
-      .eq('group_id', groupId);
+      .select('user_id, role, joined_at')
+      .eq('group_id', groupId)
+      .order('joined_at', { ascending: true });
     if (error) throw error;
-    return data.map((m) => ({ id: m.user_id, role: m.role, name: m.profiles?.display_name ?? '?' }));
+
+    const ids = rows.map((r) => r.user_id);
+    let names = {};
+    if (ids.length) {
+      const { data: profs, error: pErr } = await supabase
+        .from('profiles')
+        .select('id, display_name, username')
+        .in('id', ids);
+      if (pErr) throw pErr;
+      names = Object.fromEntries(
+        (profs ?? []).map((p) => [p.id, p.display_name || p.username || '?']),
+      );
+    }
+    return rows.map((r) => ({ id: r.user_id, role: r.role, name: names[r.user_id] ?? '?' }));
   },
 
   // ---- domain entities ----------------------------------------------
