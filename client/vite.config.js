@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // Listen on all interfaces so phones/tablets on the same Wi-Fi can reach the
+  // dev server at http://<your-lan-ip>:5173 (Vite prints the "Network:" URL).
+  server: { host: true, port: 5173 },
+  preview: { host: true, port: 4173 },
   test: {
     environment: 'jsdom',
     globals: true,

@@ -33,9 +33,15 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) and [supabase/README.md](supabase/README.
 ```bash
 cd client
 npm install
-npm run dev        # http://localhost:5173  (local mode, no setup)
+npm run dev        # local mode, no setup
 npm test           # ranking + stats + app boot
 ```
+
+The dev server listens on your LAN, so `npm run dev` prints both a **Local** and a
+**Network** URL (e.g. `http://192.168.0.145:5173`). Open the Network URL on a
+phone or tablet on the same Wi-Fi. First run, Windows will ask to allow Node
+through the firewall — allow it for **private networks**. Supabase mode works the
+same from any device since the database is hosted.
 
 ### Enable accounts + shared groups
 
