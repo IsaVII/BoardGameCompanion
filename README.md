@@ -1,4 +1,4 @@
-# Shelf — Board Game Companion
+# Shelf - Board Game Companion
 
 A polished companion app for board game collectors. Does the four things the
 BoardGameGeek app does poorly:
