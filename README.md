@@ -3,13 +3,13 @@
 A polished companion app for board game collectors. Does the four things the
 BoardGameGeek app does poorly:
 
-1. **Collection management** — add games or import a BGG export, track condition
+1. **Collection management**: add games or import a BGG export, track condition
    and estimated resale value, keep a wishlist.
-2. **Game night picker** — enter tonight's constraints (players, time, mood,
+2. **Game night picker**: enter tonight's constraints (players, time, mood,
    weight) and get an instantly filtered, ranked list from your own shelf.
-3. **Play logging & stats** — quick-log a session; over time see win-rate
+3. **Play logging & stats**: quick-log a session; over time see win-rate
    leaderboards, most-played games, longest win streak, plays per month.
-4. **Lending tracker** — log a game when it goes out and get a nudge if it's not
+4. **Lending tracker**: log a game when it goes out and get a nudge if it's not
    back in 30 days.
 
 Multi-user: sign in on any device and **share a group's shelf, plays, lending
@@ -25,12 +25,12 @@ normally would.
 
 ## Stack
 
-- **client/** — React + Vite, Redux Toolkit (normalized cache + async thunks),
+- **client/**: React + Vite, Redux Toolkit (normalized cache + async thunks),
   React Router, Tailwind CSS. `.jsx` = views only; `.js` = slices, selectors,
   data providers, and the ranking/stats/import logic.
-- **Supabase** — Postgres + Auth (username or email + password, JWT) + Row-Level
+- **Supabase**: Postgres + Auth (username or email + password, JWT) + Row-Level
   Security. No custom API server; the client talks to Supabase directly under RLS.
-- **Local mode** — with no Supabase config the app runs fully offline against
+- **Local mode**: with no Supabase config the app runs fully offline against
   `localStorage`, single device, seeded with a starter shelf.
 
 The data layer is swappable: [`client/src/lib/db/`](client/src/lib/db/) picks
