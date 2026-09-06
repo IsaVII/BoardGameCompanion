@@ -90,6 +90,14 @@ export const supabaseProvider = {
     if (error) throw error;
     return data;
   },
+  async removeMember(groupId, userId) {
+    const { error } = await supabase
+      .from('group_members')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('user_id', userId);
+    if (error) throw error;
+  },
   async listMembers(groupId) {
     const { data, error } = await supabase
       .from('group_members')

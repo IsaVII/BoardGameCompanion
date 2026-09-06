@@ -39,6 +39,15 @@ export default function AppShell({ children }) {
 
         <div className="flex items-center gap-2">
           <GroupSwitcher />
+          <NavLink
+            to="/settings"
+            aria-label="Group & account settings"
+            className={({ isActive }) =>
+              `btn-ghost px-2.5 py-1.5 text-base leading-none ${isActive ? 'border-brand text-brand' : ''}`
+            }
+          >
+            <span aria-hidden>⚙</span>
+          </NavLink>
           {isCloud && user && (
             <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => dispatch(signOut())}>
               Sign out
@@ -53,9 +62,6 @@ export default function AppShell({ children }) {
               {n.label}
             </NavLink>
           ))}
-          <NavLink to="/settings" className={linkClass}>
-            <span aria-hidden>⚙</span>Settings
-          </NavLink>
         </nav>
       </header>
 

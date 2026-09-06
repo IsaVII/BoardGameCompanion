@@ -109,6 +109,10 @@ export const localProvider = {
     if (!groupId) throw new Error('Invalid invite code (note: local codes only work on this device)');
     return groupId;
   },
+  async removeMember(groupId, userId) {
+    db.members[groupId] = (db.members[groupId] ?? []).filter((m) => m.id !== userId);
+    commit();
+  },
   async listMembers(groupId) {
     return db.members[groupId] ?? [];
   },
