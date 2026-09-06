@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { selectWishlist } from '../lib/selectors';
-import { wishAdded, wishUpdated, wishRemoved } from '../features/wishlist/wishlistSlice';
-import { gameAdded } from '../features/collection/collectionSlice';
+import { addWish, editWish, removeWish } from '../features/wishlist/wishlistSlice';
+import { addGame } from '../features/collection/collectionSlice';
+import { selectActiveGroupId } from '../features/groups/groupsSlice';
 import Modal from '../components/Modal';
 import EmptyState from '../components/EmptyState';
 import { formatMoney } from '../lib/value';
@@ -13,6 +14,7 @@ const TONE = { high: 'text-rose-300', medium: 'text-amber-300', low: 'text-slate
 export default function WishlistPage() {
   const dispatch = useAppDispatch();
   const items = useAppSelector(selectWishlist);
+  const groupId = useAppSelector(selectActiveGroupId);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', priority: 'medium', estimatedPrice: 0, notes: '' });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -22,14 +24,17 @@ export default function WishlistPage() {
   const submit = (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    dispatch(wishAdded({ ...form, title: form.title.trim(), estimatedPrice: Number(form.estimatedPrice) || 0 }));
+    dispatch(addWish({
+      groupId,
+      input: { ...form, title: form.title.trim(), estimatedPrice: Number(form.estimatedPrice) || 0 },
+    }));
     setOpen(false);
     setForm({ title: '', priority: 'medium', estimatedPrice: 0, notes: '' });
   };
 
   const acquire = (item) => {
-    dispatch(gameAdded({ title: item.title, estimatedValue: item.estimatedPrice }));
-    dispatch(wishRemoved(item.id));
+    dispatch(addGame({ groupId, input: { title: item.title, estimatedValue: item.estimatedPrice } }));
+    dispatch(removeWish({ groupId, id: item.id }));
   };
 
   return (
@@ -58,12 +63,12 @@ export default function WishlistPage() {
                 <div className="flex shrink-0 gap-2">
                   <select
                     className="field w-auto py-1 text-xs" value={i.priority}
-                    onChange={(e) => dispatch(wishUpdated({ id: i.id, changes: { priority: e.target.value } }))}
+                    onChange={(e) => dispatch(editWish({ groupId, id: i.id, changes: { priority: e.target.value } }))}
                   >
                     {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
                   <button className="btn-ghost px-3 py-1 text-xs" onClick={() => acquire(i)}>Got it →</button>
-                  <button className="text-xs text-rose-300" onClick={() => dispatch(wishRemoved(i.id))}>✕</button>
+                  <button className="text-xs text-rose-300" onClick={() => dispatch(removeWish({ groupId, id: i.id }))}>✕</button>
                 </div>
               </li>
             ))}

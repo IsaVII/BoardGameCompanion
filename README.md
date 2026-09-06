@@ -12,29 +12,35 @@ BoardGameGeek app does poorly:
 4. **Lending tracker** — log a game when it goes out and get a nudge if it's not
    back in 30 days.
 
-Offline-first: all data lives in your browser. No account, no sensitive data.
+Multi-user: sign in on any device, and **share a group's shelf, plays, lending
+and wishlist** with other people. Nothing sensitive is stored — game titles,
+scores, dates, nicknames.
 
 ## Stack
 
-- **client/** — React + Vite, Redux Toolkit, redux-persist, React Router,
-  Tailwind CSS. JSX files are views only; `.js` files hold slices, selectors and
-  the ranking/stats/import logic. See [ARCHITECTURE.md](ARCHITECTURE.md).
-- **server/** — optional Express + lowdb sync API. Not needed to run the app.
+- **client/** — React + Vite, Redux Toolkit (normalized cache + async thunks),
+  React Router, Tailwind CSS. `.jsx` = views only; `.js` = slices, selectors,
+  data providers, and the ranking/stats/import logic.
+- **Supabase** — Postgres + Auth (email + password, JWT) + Row-Level Security.
+  No custom API server; the client talks to Supabase directly under RLS.
+- **Local mode** — with no Supabase config the app runs fully offline against
+  `localStorage`, single device, seeded with a starter shelf.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [supabase/README.md](supabase/README.md).
 
 ## Run
 
 ```bash
 cd client
 npm install
-npm run dev        # http://localhost:5173
-npm test           # ranking + stats unit tests
+npm run dev        # http://localhost:5173  (local mode, no setup)
+npm test           # ranking + stats + app boot
 ```
 
-Optional sync server:
+### Enable accounts + shared groups
 
-```bash
-cd server
-npm install
-npm start          # http://localhost:4000
-# then run the client with VITE_API_URL=http://localhost:4000
-```
+1. Create a Supabase project, run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
+2. `cp client/.env.example client/.env.local` and fill in `VITE_SUPABASE_URL` and
+   `VITE_SUPABASE_ANON_KEY`.
+3. `npm run dev` — now you get a login screen, a group switcher, invite codes,
+   and realtime sync across devices.

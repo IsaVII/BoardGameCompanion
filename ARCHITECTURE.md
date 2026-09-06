@@ -1,111 +1,137 @@
-# Board Game Companion — Architecture
+# Shelf — Architecture
 
-A polished, native-feeling companion app for board game collectors. Fills the four
-jobs BGG's app does poorly: **collection management**, **game night picker**,
-**play logging + stats**, and **lending tracker**.
+A companion app for board game collectors. Fills the four jobs BGG's app does
+poorly: **collection management**, **game night picker**, **play logging +
+stats**, **lending tracker**. Multi-user: people sign in on any device and share
+a group's data.
 
-## Guiding constraints (from the brief)
+## Constraints (from the brief)
 
-- **No sensitive data.** Titles, scores, dates, player nicknames only. No auth
-  provider lock-in, no location, no payment accounts.
-- **Offline-first.** The app is fully usable with zero backend — state lives in
-  the browser and is the source of truth. The backend is an optional sync layer.
-- **Fast.** Client-side filtering/ranking, no spinners for core loops.
+- **No sensitive data** — titles, scores, dates, nicknames. No health/finance/
+  location. Auth exists only to scope data to people, not to protect secrets.
+- **Fast core loops** — filtering and ranking run client-side on already-loaded
+  data; no round-trip to pick a game.
+- **Runnable with zero setup** — a local mode (localStorage) works with no
+  backend; pointing at Supabase upgrades it to accounts + sharing.
 
-## Monorepo layout
+## Layout
 
 ```
 BoardGameCompanion/
-├── client/                 # React + Vite SPA (the product)
-│   ├── src/
-│   │   ├── app/            # store config, root providers
-│   │   ├── features/       # one folder per domain (Redux slice + hooks + views)
-│   │   │   ├── collection/
-│   │   │   ├── picker/
-│   │   │   ├── plays/
-│   │   │   ├── lending/
-│   │   │   └── wishlist/
-│   │   ├── components/     # shared presentational components (.jsx)
-│   │   ├── lib/            # pure helpers, selectors, ranking logic (.js)
-│   │   ├── data/           # seed data, BGG import adapter (.js)
-│   │   ├── pages/          # route-level screens (.jsx)
-│   │   └── styles/
-│   └── ...
-└── server/                 # optional Express + lowdb sync API
-    └── src/
+├── client/                     # React + Vite SPA (the product)
+│   └── src/
+│       ├── app/                # store, hooks
+│       ├── features/           # one folder per domain: slice (.js) + views (.jsx)
+│       │   ├── auth/           # session, login bootstrap
+│       │   ├── groups/         # group list, switcher, membership, data loader
+│       │   ├── collection/  plays/  lending/  wishlist/  players/
+│       │   └── createEntityFeature.js   # slice factory shared by the 5 domains
+│       ├── components/         # shared presentational components (.jsx)
+│       ├── lib/                # pure logic (.js)
+│       │   ├── db/             # data provider: supabase | local, one interface
+│       │   ├── ranking.js  stats.js  value.js  lending.js
+│       │   ├── bggImport.js  filterCollection.js  selectors.js
+│       │   └── supabase.js
+│       ├── data/seed.js        # starter shelf for local mode
+│       └── pages/              # route screens (.jsx)
+└── supabase/
+    └── migrations/0001_init.sql   # schema + RLS + signup trigger + join RPC
 ```
 
-### File convention: `.jsx` vs `.js`
+### `.jsx` vs `.js`
 
-- **`.jsx`** — anything that returns markup: components, pages, layouts.
-- **`.js`** — everything else: Redux slices, selectors, ranking/stat math,
-  formatters, the BGG import adapter, API client, hooks that contain no JSX.
+- **`.jsx`** — components, pages, layouts (anything returning markup).
+- **`.js`** — Redux slices, async thunks, selectors, the data providers, and all
+  ranking/stats/import/filter logic. Keeps domain logic testable without React.
 
-This keeps business logic linated/testable in isolation from the view layer.
+## Data layer: one interface, two providers
 
-## Frontend
+`lib/db/index.js` picks a provider at load time from env config:
 
-| Concern            | Choice                              | Why |
-|--------------------|-------------------------------------|-----|
-| Build              | Vite                                | fast HMR, native ESM |
-| UI                 | React 18                            | — |
-| State              | Redux Toolkit                       | normalized entities, predictable, devtools |
-| Persistence        | `redux-persist` → `localStorage`    | offline-first, survives reload |
-| Routing            | React Router v6                     | — |
-| Styling            | Tailwind CSS                        | design consistency without a component lib |
-| IDs                | `nanoid` (bundled with RTK)         | — |
+| Provider | When | Backing store | Accounts | Sharing |
+|---|---|---|---|---|
+| `localProvider` | no `VITE_SUPABASE_*` | `localStorage` | implicit single user | groups are device-local |
+| `supabaseProvider` | env configured | Supabase Postgres | email + password (JWT) | real, via group membership |
 
-### Redux store shape (normalized)
+Both implement the same async interface: `getSession / onAuthChange / signIn /
+signUp / signOut`, `listGroups / createGroup / renameGroup / leaveGroup /
+createInvite / joinGroup / listMembers`, and per-entity
+`list / create / update / remove` plus `subscribe` for realtime.
 
-```
-{
-  collection: { ids: [], entities: { [id]: Game } },
-  plays:      { ids: [], entities: { [id]: Play } },
-  lending:    { ids: [], entities: { [id]: Loan } },
-  wishlist:   { ids: [], entities: { [id]: WishlistItem } },
-  players:    { ids: [], entities: { [id]: Player } },
-  ui:         { pickerConstraints, filters }
-}
-```
+Nothing above `lib/db` knows which provider is active.
 
-`Game`: id, title, minPlayers, maxPlayers, minTime, maxTime, weight (1–5),
-categories[], mood ('competitive'|'cooperative'|'party'|'strategy'),
-condition ('mint'|'good'|'worn'|'damaged'), estimatedValue, thumbnail, bggId,
-acquiredAt, notes.
-
-### Key client logic (`src/lib/`)
-
-- **`ranking.js`** — the game night picker. Given `{players, minutes, mood}`,
-  filter the collection to games that fit, then score by fit tightness +
-  play recency + weight match. Pure function, unit-testable.
-- **`stats.js`** — win-rate per player per group, most-played, longest win
-  streak, total hours, plays-per-month.
-- **`value.js`** — collection value roll-up, condition-adjusted.
-- **`bggImport.js`** — parses a BGG collection XML/CSV export into `Game[]`.
-- **`lending.js`** — overdue detection (default 30-day window).
-
-## Backend (optional sync layer — `server/`)
-
-Thin Express REST API over `lowdb` (JSON file). Not required to run the app;
-it exists so a user can sync across devices later.
+## State (Redux Toolkit)
 
 ```
-GET/PUT /api/collection      GET/POST/PATCH/DELETE /api/plays
-GET/PUT /api/wishlist        GET/POST/PATCH        /api/lending
-POST    /api/sync            # last-write-wins bulk merge
+auth:    { user, status }                       // status gates the login screen
+groups:  { list, activeId, status }             // activeId persisted to localStorage
+games / plays / loans / wishlist / players:      // createEntityAdapter, one per domain
+         { ids, entities, status }               // a normalized cache of the active group
+ui:      { picker, collectionFilters }
 ```
 
-The client talks to it through `src/lib/apiClient.js`, which is a no-op when
-`VITE_API_URL` is unset. Sync is opt-in and diff-based (last-write-wins on
-`updatedAt`), matching the "no sensitive data, low stakes" risk profile.
+The provider (Supabase or localStorage) is the **source of truth**; Redux is a
+per-group cache, so there is no `redux-persist`.
 
-## Testing
+### The five domain slices
 
-- `lib/*` pure functions get Vitest unit tests (ranking + stats first).
-- Components: React Testing Library smoke tests for the picker and play logger.
+All built by `createEntityFeature(name, { sortComparer, prepare })`, which
+returns an entity adapter plus four thunks — `fetchAll(groupId)`,
+`addItem({groupId, input})`, `editItem({groupId, id, changes})`,
+`removeItem({groupId, id})` — wired to the active provider. `prepare` fills
+domain defaults on create.
 
-## Roadmap hooks (not in v1)
+### Data lifecycle
 
-- Barcode scan (camera → UPC → metadata lookup) — `features/collection/scan`.
-- BGG live import via a backend proxy (avoids CORS + rate limits).
-- Shareable stats cards (render to canvas/PNG).
+- `useAuthBootstrap()` — loads the session once, subscribes to auth changes.
+- `useGroupData()` — when signed in, loads the group list; whenever `activeId`
+  changes, refetches all five domains and opens a realtime subscription that
+  refetches on any change to that group's rows.
+
+## Database (Supabase)
+
+Domain tables share a shape: scoping columns + a `data jsonb` payload for the
+rest (filtering is client-side on small data, so per-field columns aren't worth
+the migration weight). The client works with a flattened `{ id, ...data }`.
+
+```
+profiles(id=auth.uid, display_name)
+groups(id, name, created_by)
+group_members(group_id, user_id, role)          -- 'owner' | 'member'
+group_invites(id, group_id, code, expires_at)
+games | players | plays | loans | wishlist
+  (id, group_id, data jsonb, created_by, created_at, updated_at)
+```
+
+**RLS** — every domain policy is `is_group_member(group_id)`; a user can read or
+write a row only in a group they belong to. **Signup trigger** creates a profile,
+a personal "My Shelf" group, and an owner membership. **`join_group_with_code()`**
+is a `SECURITY DEFINER` RPC that adds the caller to a group from an invite code.
+Realtime is enabled on the domain tables + `group_members`.
+
+No custom API server: RLS lets the client talk to Supabase directly.
+
+## Key client logic (`lib/`)
+
+- **`ranking.js`** — game night picker: filter the shelf to what fits
+  `{players, minutes, mood, maxWeight}`, then score by player fit, time fit, and
+  play recency. Pure, unit-tested.
+- **`stats.js`** — competitive win-rate leaderboard, most-played, longest win
+  streak, plays per month. Pure, unit-tested.
+- **`filterCollection.js`** — the "filter by players / length / weight / mood"
+  use case from the App Store reviews.
+- **`value.js`** — condition-adjusted collection value for the resale angle.
+- **`bggImport.js`** — parses a BGG CSV or XML collection export in the browser.
+
+## Testing (Vitest)
+
+- `lib/ranking`, `lib/stats` — pure-function unit tests.
+- `app/App.test.jsx` — renders the app in local mode and asserts the full
+  boot path (auth → groups → entity fetch → dashboard).
+
+## Roadmap hooks
+
+- Barcode scan → UPC lookup (`features/collection/scan`).
+- Owner-only member management UI (remove members, transfer ownership).
+- Shareable stat cards rendered to PNG.
+- Optimistic writes (currently thunks refetch-on-write via realtime).

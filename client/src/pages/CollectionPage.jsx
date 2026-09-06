@@ -4,7 +4,8 @@ import { selectGames } from '../lib/selectors';
 import { filterCollection } from '../lib/filterCollection';
 import { collectionValue, formatMoney } from '../lib/value';
 import { collectionFiltersChanged, collectionFiltersReset } from '../features/ui/uiSlice';
-import { gameAdded, gameUpdated, gameRemoved } from '../features/collection/collectionSlice';
+import { selectActiveGroupId } from '../features/groups/groupsSlice';
+import { addGame, editGame, removeGame } from '../features/collection/collectionSlice';
 import GameForm from '../features/collection/GameForm';
 import ImportDialog from '../features/collection/ImportDialog';
 import GameCard from '../components/GameCard';
@@ -17,6 +18,7 @@ const MOODS = ['any', 'strategy', 'competitive', 'cooperative', 'party'];
 export default function CollectionPage() {
   const dispatch = useAppDispatch();
   const games = useAppSelector(selectGames);
+  const groupId = useAppSelector(selectActiveGroupId);
   const filters = useAppSelector((s) => s.ui.collectionFilters);
 
   const [editing, setEditing] = useState(null); // game | 'new' | null
@@ -115,7 +117,11 @@ export default function CollectionPage() {
         title="Add a game"
       >
         <GameForm
-          onSubmit={(g) => { dispatch(gameAdded(g)); setEditing(null); flash(`Added ${g.title}`); }}
+          onSubmit={(g) => {
+            dispatch(addGame({ groupId, input: g }));
+            setEditing(null);
+            flash(`Added ${g.title}`);
+          }}
         />
       </Modal>
 
@@ -128,12 +134,12 @@ export default function CollectionPage() {
           <GameForm
             initial={editing}
             onSubmit={(changes) => {
-              dispatch(gameUpdated({ id: editing.id, changes }));
+              dispatch(editGame({ groupId, id: editing.id, changes }));
               setEditing(null);
               flash('Saved');
             }}
             onDelete={() => {
-              dispatch(gameRemoved(editing.id));
+              dispatch(removeGame({ groupId, id: editing.id }));
               setEditing(null);
               flash('Removed');
             }}
@@ -142,7 +148,7 @@ export default function CollectionPage() {
       </Modal>
 
       <Modal open={importing} onClose={() => setImporting(false)} title="Import from BoardGameGeek">
-        <ImportDialog onDone={(n) => { setImporting(false); flash(`Imported ${n} games`); }} />
+        <ImportDialog groupId={groupId} onDone={(n) => { setImporting(false); flash(`Imported ${n} games`); }} />
       </Modal>
 
       {toast && (

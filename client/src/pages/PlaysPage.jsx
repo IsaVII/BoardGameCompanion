@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { selectPlays, selectGames, selectPlayers, selectPlayFeed } from '../lib/selectors';
-import { playLogged, playRemoved } from '../features/plays/playsSlice';
+import { logPlay, removePlay } from '../features/plays/playsSlice';
+import { selectActiveGroupId } from '../features/groups/groupsSlice';
 import {
   leaderboard, mostPlayed, longestWinStreak, playsPerMonth, totalHours,
 } from '../lib/stats';
@@ -18,6 +19,7 @@ export default function PlaysPage() {
   const games = useAppSelector(selectGames);
   const players = useAppSelector(selectPlayers);
   const feed = useAppSelector(selectPlayFeed);
+  const groupId = useAppSelector(selectActiveGroupId);
   const [logging, setLogging] = useState(false);
 
   const board = useMemo(() => leaderboard(plays, players).filter((p) => p.plays > 0), [plays, players]);
@@ -86,7 +88,7 @@ export default function PlaysPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <span className="text-xs text-slate-500">{relativeDate(p.date)}</span>
-                    <button className="text-xs text-rose-300" onClick={() => dispatch(playRemoved(p.id))}>
+                    <button className="text-xs text-rose-300" onClick={() => dispatch(removePlay({ groupId, id: p.id }))}>
                       ✕
                     </button>
                   </div>
@@ -98,7 +100,7 @@ export default function PlaysPage() {
       )}
 
       <Modal open={logging} onClose={() => setLogging(false)} title="Log a play">
-        <PlayForm onSubmit={(p) => { dispatch(playLogged(p)); setLogging(false); }} />
+        <PlayForm onSubmit={(p) => { dispatch(logPlay({ groupId, input: p })); setLogging(false); }} />
       </Modal>
     </div>
   );

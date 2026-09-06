@@ -1,4 +1,8 @@
 import { NavLink } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../app/hooks';
+import { selectUser, signOut } from '../features/auth/authSlice';
+import { isCloud } from '../lib/db';
+import GroupSwitcher from '../features/groups/GroupSwitcher';
 
 const NAV = [
   { to: '/', label: 'Home', icon: '◆', end: true },
@@ -17,9 +21,12 @@ function linkClass({ isActive }) {
 }
 
 export default function AppShell({ children }) {
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectUser);
+
   return (
     <div className="mx-auto flex min-h-screen max-w-5xl flex-col px-4 pb-24 pt-5 sm:pb-8">
-      <header className="mb-6 flex items-center justify-between">
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-lg font-black text-slate-950">
             S
@@ -29,7 +36,17 @@ export default function AppShell({ children }) {
             <p className="text-[11px] text-slate-400">Board game companion</p>
           </div>
         </div>
-        <nav className="hidden gap-1 sm:flex">
+
+        <div className="flex items-center gap-2">
+          <GroupSwitcher />
+          {isCloud && user && (
+            <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => dispatch(signOut())}>
+              Sign out
+            </button>
+          )}
+        </div>
+
+        <nav className="hidden w-full gap-1 sm:flex">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end={n.end} className={linkClass}>
               <span aria-hidden>{n.icon}</span>

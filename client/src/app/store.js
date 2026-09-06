@@ -1,7 +1,7 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import { configureStore } from '@reduxjs/toolkit';
 
+import authReducer from '../features/auth/authSlice';
+import groupsReducer from '../features/groups/groupsSlice';
 import collectionReducer from '../features/collection/collectionSlice';
 import playsReducer from '../features/plays/playsSlice';
 import lendingReducer from '../features/lending/lendingSlice';
@@ -9,29 +9,17 @@ import wishlistReducer from '../features/wishlist/wishlistSlice';
 import playersReducer from '../features/players/playersSlice';
 import uiReducer from '../features/ui/uiSlice';
 
-const rootReducer = combineReducers({
-  collection: collectionReducer,
-  plays: playsReducer,
-  lending: lendingReducer,
-  wishlist: wishlistReducer,
-  players: playersReducer,
-  ui: uiReducer,
-});
-
-const persistConfig = {
-  key: 'shelf-v1',
-  storage,
-  whitelist: ['collection', 'plays', 'lending', 'wishlist', 'players'],
-};
-
+// The data provider (Supabase or localStorage) is the source of truth; Redux is
+// session + normalized cache, so no redux-persist here.
 export const store = configureStore({
-  reducer: persistReducer(persistConfig, rootReducer),
-  middleware: (getDefault) =>
-    getDefault({
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE', 'persist/PURGE'],
-      },
-    }),
+  reducer: {
+    auth: authReducer,
+    groups: groupsReducer,
+    games: collectionReducer,
+    plays: playsReducer,
+    loans: lendingReducer,
+    wishlist: wishlistReducer,
+    players: playersReducer,
+    ui: uiReducer,
+  },
 });
-
-export const persistor = persistStore(store);

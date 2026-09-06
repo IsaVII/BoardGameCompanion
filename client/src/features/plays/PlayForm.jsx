@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../app/hooks';
 import { selectGames, selectPlayers } from '../../lib/selectors';
-import { playerAdded } from '../players/playersSlice';
+import { addPlayer } from '../players/playersSlice';
+import { selectActiveGroupId } from '../groups/groupsSlice';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -9,6 +10,7 @@ export default function PlayForm({ onSubmit }) {
   const dispatch = useAppDispatch();
   const games = useAppSelector(selectGames);
   const players = useAppSelector(selectPlayers);
+  const groupId = useAppSelector(selectActiveGroupId);
 
   const [form, setForm] = useState({
     gameId: games[0]?.id ?? '',
@@ -33,11 +35,11 @@ export default function PlayForm({ onSubmit }) {
       return { ...f, [key]: next };
     });
 
-  const addPlayer = () => {
+  const addNewPlayer = async () => {
     const name = newName.trim();
     if (!name) return;
-    const action = dispatch(playerAdded(name));
-    setForm((f) => ({ ...f, playerIds: [...f.playerIds, action.payload.id] }));
+    const created = await dispatch(addPlayer({ groupId, input: { name } })).unwrap();
+    setForm((f) => ({ ...f, playerIds: [...f.playerIds, created.id] }));
     setNewName('');
   };
 
@@ -85,8 +87,8 @@ export default function PlayForm({ onSubmit }) {
         <div className="mt-2 flex gap-2">
           <input className="field" placeholder="Add player…" value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addPlayer())} />
-          <button type="button" className="btn-ghost" onClick={addPlayer}>Add</button>
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addNewPlayer())} />
+          <button type="button" className="btn-ghost" onClick={addNewPlayer}>Add</button>
         </div>
       </div>
 

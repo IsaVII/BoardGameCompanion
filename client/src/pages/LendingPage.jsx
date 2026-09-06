@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { selectLoans, selectGames } from '../lib/selectors';
-import { loanCreated, loanReturned, loanRemoved } from '../features/lending/lendingSlice';
+import { createLoan, editLoan, removeLoan } from '../features/lending/lendingSlice';
+import { selectActiveGroupId } from '../features/groups/groupsSlice';
 import { splitLoans, daysOut } from '../lib/lending';
 import Modal from '../components/Modal';
 import EmptyState from '../components/EmptyState';
@@ -31,6 +32,7 @@ export default function LendingPage() {
   const dispatch = useAppDispatch();
   const loans = useAppSelector(selectLoans);
   const games = useAppSelector(selectGames);
+  const groupId = useAppSelector(selectActiveGroupId);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ gameId: games[0]?.id ?? '', borrower: '', lentAt: new Date().toISOString().slice(0, 10), reminderDays: 30 });
 
@@ -41,7 +43,10 @@ export default function LendingPage() {
   const submit = (e) => {
     e.preventDefault();
     if (!form.gameId || !form.borrower.trim()) return;
-    dispatch(loanCreated({ ...form, borrower: form.borrower.trim(), reminderDays: Number(form.reminderDays) || 30 }));
+    dispatch(createLoan({
+      groupId,
+      input: { ...form, borrower: form.borrower.trim(), reminderDays: Number(form.reminderDays) || 30 },
+    }));
     setOpen(false);
     setForm((f) => ({ ...f, borrower: '' }));
   };
@@ -63,7 +68,8 @@ export default function LendingPage() {
           <ul className="space-y-2">
             {overdue.map((l) => (
               <LoanRow key={l.id} loan={l} title={title(l.gameId)} tone="border-rose-500/40 bg-rose-500/10"
-                onReturn={() => dispatch(loanReturned(l.id))} onRemove={() => dispatch(loanRemoved(l.id))} />
+                onReturn={() => dispatch(editLoan({ groupId, id: l.id, changes: { returnedAt: new Date().toISOString().slice(0, 10) } }))}
+                onRemove={() => dispatch(removeLoan({ groupId, id: l.id }))} />
             ))}
           </ul>
         </section>
@@ -75,7 +81,8 @@ export default function LendingPage() {
           <ul className="space-y-2">
             {out.map((l) => (
               <LoanRow key={l.id} loan={l} title={title(l.gameId)}
-                onReturn={() => dispatch(loanReturned(l.id))} onRemove={() => dispatch(loanRemoved(l.id))} />
+                onReturn={() => dispatch(editLoan({ groupId, id: l.id, changes: { returnedAt: new Date().toISOString().slice(0, 10) } }))}
+                onRemove={() => dispatch(removeLoan({ groupId, id: l.id }))} />
             ))}
           </ul>
         </section>
@@ -86,7 +93,7 @@ export default function LendingPage() {
           <h2 className="text-sm font-semibold text-slate-500">Returned</h2>
           <ul className="space-y-2 opacity-70">
             {returned.map((l) => (
-              <LoanRow key={l.id} loan={l} title={title(l.gameId)} onRemove={() => dispatch(loanRemoved(l.id))} />
+              <LoanRow key={l.id} loan={l} title={title(l.gameId)} onRemove={() => dispatch(removeLoan({ groupId, id: l.id }))} />
             ))}
           </ul>
         </section>

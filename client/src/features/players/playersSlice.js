@@ -1,23 +1,15 @@
-import { createSlice, createEntityAdapter, nanoid } from '@reduxjs/toolkit';
-import { seed } from '../../data/initialState';
+import { createEntityFeature } from '../createEntityFeature';
 
-const adapter = createEntityAdapter({
+const feature = createEntityFeature('players', {
   sortComparer: (a, b) => a.name.localeCompare(b.name),
+  prepare: (input) => ({ linkedUserId: null, ...input }),
 });
 
-const slice = createSlice({
-  name: 'players',
-  initialState: adapter.getInitialState(undefined, seed.players),
-  reducers: {
-    playerAdded: {
-      reducer: adapter.addOne,
-      prepare: (name) => ({ payload: { id: nanoid(), name } }),
-    },
-    playerRenamed: adapter.updateOne,
-    playerRemoved: adapter.removeOne,
-  },
-});
-
-export const { playerAdded, playerRenamed, playerRemoved } = slice.actions;
-export const playersSelectors = adapter.getSelectors((s) => s.players);
-export default slice.reducer;
+export const {
+  fetchAll: fetchPlayers,
+  addItem: addPlayer,
+  editItem: editPlayer,
+  removeItem: removePlayer,
+} = feature.actions;
+export const playersSelectors = feature.selectors;
+export default feature.reducer;
