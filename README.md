@@ -16,6 +16,13 @@ Multi-user: sign in on any device and **share a group's shelf, plays, lending
 and wishlist** with other people via invite codes. Nothing sensitive is stored —
 game titles, scores, dates, nicknames.
 
+## Motivation
+
+This project was an experiment in a more exploratory development style. Building
+the app largely through AI-assisted "vibe coding" and letting the design emerge,
+rather than working through a predefined feature list one step at a time as I
+normally would.
+
 ## Stack
 
 - **client/** — React + Vite, Redux Toolkit (normalized cache + async thunks),
